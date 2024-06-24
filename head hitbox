@@ -1,0 +1,15 @@
+local localplayer = game.Players.LocalPlayer
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= localplayer then
+            if v.Character:FindFirstChild("Head") and v ~= localplayer then
+                local jk = v.Character:FindFirstChild("Head")
+                if jk and jk ~= localplayer and v.Character:FindFirstChild("Humanoid").Health > 0 then
+                    jk.Size = Vector3.new(7, 7, 7)
+                    jk.Transparency = 0.5
+                end
+            end
+        end
+    end
+end)
