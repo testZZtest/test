@@ -1,0 +1,111 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Função para encontrar um jogador pelo nome parcial ou nome exibido parcial
+local function findPlayerByName(partialName)
+    partialName = partialName:lower()
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        local playerName = player.Name:lower()
+        local displayName = player.DisplayName:lower()
+        if playerName:sub(1, #partialName) == partialName or displayName:sub(1, #partialName) == partialName then
+            return player
+        end
+    end
+    return nil
+end
+
+-- Criar um ScreenGui global
+local screenGui = Instance.new("ScreenGui")
+screenGui.DisplayOrder = 10 -- Garante que o GUI seja exibido na frente de outros GUIs
+screenGui.IgnoreGuiInset = true -- Ignora a área da interface do usuário do jogo
+screenGui.ResetOnSpawn = false -- Evita que os elementos sejam resetados ao ressurgir
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Interface de usuário
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(0, 200, 0, 50)
+textBox.Position = UDim2.new(0.85, -100, 0.05, 0) -- Posição ajustada para o canto superior direito
+textBox.PlaceholderText = "Digite o nome do jogador"
+textBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Cor de fundo escura
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255) -- Cor do texto branca
+textBox.Parent = screenGui
+
+local teleportButton = Instance.new("TextButton")
+teleportButton.Size = UDim2.new(0, 100, 0, 50)
+teleportButton.Position = UDim2.new(0.85, -150, 0.15, 0) -- Posição ajustada para abaixo e à esquerda do TextBox
+teleportButton.Text = "Teleportar"
+teleportButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Cor de fundo escura
+teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- Cor do texto branca
+teleportButton.Parent = screenGui
+
+local returnButton = Instance.new("TextButton")
+returnButton.Size = UDim2.new(0, 100, 0, 50)
+returnButton.Position = UDim2.new(0.85, -50, 0.15, 0) -- Posição ajustada para abaixo e à direita do TextBox
+returnButton.Text = "Voltar"
+returnButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Cor de fundo escura
+returnButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- Cor do texto branca
+returnButton.Parent = screenGui
+
+local originalPosition
+
+-- Evento de teletransporte
+teleportButton.MouseButton1Click:Connect(function()
+    local targetName = textBox.Text
+    local targetPlayer = findPlayerByName(targetName)
+    
+    if targetPlayer and targetPlayer.Character and game.Players.LocalPlayer.Character then
+        originalPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+    end
+end)
+
+-- Evento de voltar
+returnButton.MouseButton1Click:Connect(function()
+    if originalPosition and game.Players.LocalPlayer.Character then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = originalPosition
+    end
+end)
+
+-- Tornando os elementos móveis
+local function makeDraggable(frame)
+    local dragToggle = nil
+    local dragInput = nil
+    local dragStart = nil
+    local startPos = nil
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragToggle = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragToggle and input == dragInput then
+            update(input)
+        end
+    end)
+end
+
+-- Tornando os elementos móveis
+makeDraggable(teleportButton)
+makeDraggable(returnButton)
+makeDraggable(textBox)
