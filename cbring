@@ -1,0 +1,123 @@
+-- Criando a GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local TextBox = Instance.new("TextBox")
+local CbringButton = Instance.new("TextButton")
+local ResetButton = Instance.new("TextButton")
+
+-- Configurando a GUI
+ScreenGui.Name = "CbringGui"
+ScreenGui.Parent = game.CoreGui
+
+Frame.Parent = ScreenGui
+Frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Dark mode
+Frame.Position = UDim2.new(0.8, 0, 0.05, 0)
+Frame.Size = UDim2.new(0, 200, 0, 150)
+
+TextBox.Parent = Frame
+TextBox.PlaceholderText = "Digite o nome ou apelido"
+TextBox.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Dark mode
+TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextBox.Position = UDim2.new(0.1, 0, 0.2, 0)
+TextBox.Size = UDim2.new(0.8, 0, 0.2, 0)
+
+CbringButton.Parent = Frame
+CbringButton.Text = "Ativar Cbring"
+CbringButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Dark mode
+CbringButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CbringButton.Position = UDim2.new(0.1, 0, 0.5, 0)
+CbringButton.Size = UDim2.new(0.8, 0, 0.2, 0)
+
+ResetButton.Parent = Frame
+ResetButton.Text = "Resetar Cbring"
+ResetButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Dark mode
+ResetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ResetButton.Position = UDim2.new(0.1, 0, 0.75, 0)
+ResetButton.Size = UDim2.new(0.8, 0, 0.2, 0)
+
+-- Variáveis para armazenar o estado do loop e a posição original do jogador
+local cbringLoop = false
+local originalPositions = {}
+
+-- Funções para encontrar o jogador
+local function findPlayerByNameOrDisplayName(name)
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if string.sub(string.lower(player.Name), 1, string.len(name)) == string.lower(name) or 
+           string.sub(string.lower(player.DisplayName), 1, string.len(name)) == string.lower(name) then
+            return player
+        end
+    end
+    return nil
+end
+
+-- Função para cbring em loop
+local function startCbringLoop(targetPlayer, localPlayer)
+    cbringLoop = true
+    while cbringLoop and targetPlayer and targetPlayer.Character and localPlayer and localPlayer.Character do
+        targetPlayer.Character:SetPrimaryPartCFrame(localPlayer.Character.PrimaryPart.CFrame * CFrame.new(0, 0, 3))
+        wait(0.1) -- Ajuste o tempo do loop conforme necessário
+    end
+end
+
+-- Funções para os botões
+CbringButton.MouseButton1Click:Connect(function()
+    local playerName = TextBox.Text
+    local player = findPlayerByNameOrDisplayName(playerName)
+    local localPlayer = game.Players.LocalPlayer
+    if player and localPlayer and localPlayer.Character and player.Character then
+        -- Salvar a posição original
+        originalPositions[player] = player.Character:GetPrimaryPartCFrame()
+        startCbringLoop(player, localPlayer)
+    end
+end)
+
+ResetButton.MouseButton1Click:Connect(function()
+    local playerName = TextBox.Text
+    local player = findPlayerByNameOrDisplayName(playerName)
+    if player and player.Character then
+        -- Parar o loop de cbring
+        cbringLoop = false
+        -- Restaurar a posição original
+        if originalPositions[player] then
+            player.Character:SetPrimaryPartCFrame(originalPositions[player])
+            originalPositions[player] = nil
+        end
+    end
+end)
+
+-- Tornando a GUI móvel em dispositivos móveis
+local UIS = game:GetService("UserInputService")
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+Frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
