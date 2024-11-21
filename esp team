@@ -1,0 +1,74 @@
+local DepthMode = "AlwaysOnTop"
+local FillTransparency = 0.5
+local OutlineTransparency = 0
+
+local CoreGui = game:FindService("CoreGui")
+local Players = game:FindService("Players")
+local lp = Players.LocalPlayer
+local connections = {}
+
+local Storage = Instance.new("Folder")
+Storage.Parent = CoreGui
+Storage.Name = "Highlight_Storage"
+
+-- Função para determinar a cor do time
+local function GetTeamColor(player)
+    if player.Team then
+        return player.Team.TeamColor.Color
+    else
+        return Color3.fromRGB(128, 128, 128) -- Cinza caso o jogador não esteja em um time
+    end
+end
+
+local function UpdateHighlightColor(highlight, player)
+    if player and highlight then
+        highlight.FillColor = GetTeamColor(player)
+    end
+end
+
+local function Highlight(plr)
+    local Highlight = Instance.new("Highlight")
+    Highlight.Name = plr.Name
+    Highlight.DepthMode = DepthMode
+    Highlight.FillTransparency = FillTransparency
+    Highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    Highlight.OutlineTransparency = OutlineTransparency
+    Highlight.Parent = Storage
+    
+    local plrchar = plr.Character
+    if plrchar then
+        Highlight.Adornee = plrchar
+    end
+
+    -- Atualizar a cor do time
+    UpdateHighlightColor(Highlight, plr)
+
+    -- Conectar eventos para atualizações dinâmicas
+    connections[plr] = {
+        CharacterAdded = plr.CharacterAdded:Connect(function(char)
+            Highlight.Adornee = char
+        end),
+        TeamChanged = plr:GetPropertyChangedSignal("Team"):Connect(function()
+            UpdateHighlightColor(Highlight, plr)
+        end)
+    }
+end
+
+Players.PlayerAdded:Connect(Highlight)
+
+for _, player in pairs(Players:GetPlayers()) do
+    Highlight(player)
+end
+
+Players.PlayerRemoving:Connect(function(plr)
+    local plrname = plr.Name
+    if Storage:FindFirstChild(plrname) then
+        Storage[plrname]:Destroy()
+    end
+    if connections[plr] then
+        for _, connection in pairs(connections[plr]) do
+            connection:Disconnect()
+        end
+        connections[plr] = nil
+    end
+end)
