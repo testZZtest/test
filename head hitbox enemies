@@ -1,0 +1,23 @@
+local localplayer = game.Players.LocalPlayer
+
+game:GetService("RunService").RenderStepped:Connect(function()
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= localplayer and v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") then
+            local head = v.Character.Head
+            local humanoid = v.Character.Humanoid
+            
+            -- Verifica se o jogador está vivo e não está no mesmo time
+            if humanoid.Health > 0 and v.Team ~= localplayer.Team then
+                -- Redefine as propriedades da cabeça constantemente
+                head.Size = Vector3.new(5, 5, 5)
+                head.Transparency = 0.5
+                head.CanCollide = false
+                head.Anchored = false
+            else
+                -- Restaura a hitbox da cabeça para jogadores do mesmo time
+                head.Size = Vector3.new(1, 1, 1)
+                head.Transparency = 0
+            end
+        end
+    end
+end)
