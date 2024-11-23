@@ -1,0 +1,134 @@
+-- GUI Móvel ao Toque
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 200, 0, 100)
+mainFrame.Position = UDim2.new(0, 10, 0, 10)
+mainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+mainFrame.Parent = screenGui
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 200, 0, 50)
+toggleButton.Position = UDim2.new(0, 0, 0, 0)
+toggleButton.Text = "Ativar Autofarm"
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+toggleButton.Parent = mainFrame
+
+local stopButton = Instance.new("TextButton")
+stopButton.Size = UDim2.new(0, 200, 0, 50)
+stopButton.Position = UDim2.new(0, 0, 0, 50)
+stopButton.Text = "Desativar Autofarm"
+stopButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+stopButton.Parent = mainFrame
+
+local autofarmEnabled = false
+
+local function startAutofarm()
+    autofarmEnabled = true
+    toggleButton.Text = "Autofarm Ativo"
+    toggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+
+    while autofarmEnabled do
+        -- 1. Vai para o spawn perto do caixa
+        local args = {
+            [1] = "Grayridge",
+            [2] = false,
+            [3] = false
+        }
+        game:GetService("ReplicatedStorage").GeneralEvents.Spawn:FireServer(unpack(args))
+        
+        wait(2.5)
+        
+        -- 2. Tween até a posição do caixa
+        local targetPosition = Vector3.new(1475.44873046875, 132.8365020751953, 1658.5869140625)
+        local char = game.Players.LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local tweenService = game:GetService("TweenService")
+            local tweenInfo = TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+            local goal = {Position = targetPosition}
+            local tween = tweenService:Create(char.HumanoidRootPart, tweenInfo, goal)
+            tween:Play()
+            tween.Completed:Wait()
+        end
+        
+        wait(3)
+        
+        -- 3. Rouba o caixa 5 vezes
+        for i = 1, 5 do
+            local args = {
+                [1] = "Register",
+                [2] = {
+                    ["Part"] = workspace.CashRegister.Union,
+                    ["OpenPart"] = workspace.CashRegister.Open,
+                    ["ActiveValue"] = workspace.CashRegister.Active,
+                    ["Active"] = true
+                }
+            }
+            game:GetService("ReplicatedStorage").GeneralEvents.Rob:FireServer(unpack(args))
+            wait(0.1)
+        end
+        
+        wait(2.6)
+        
+        -- 4. Vai para o spawn de resgatar o dinheiro
+        local args = {
+            [1] = "FortCassidy",
+            [2] = true,
+            [3] = false
+        }
+        game:GetService("ReplicatedStorage").GeneralEvents.Spawn:FireServer(unpack(args))
+
+        wait(2.7)
+    end
+end
+
+local function stopAutofarm()
+    autofarmEnabled = false
+    toggleButton.Text = "Ativar Autofarm"
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+    if not autofarmEnabled then
+        startAutofarm()
+    end
+end)
+
+stopButton.MouseButton1Click:Connect(function()
+    if autofarmEnabled then
+        stopAutofarm()
+    end
+end)
+
+-- Tornar GUI Móvel ao Toque
+local UserInputService = game:GetService("UserInputService")
+
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+local function onInputBegan(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end
+
+local function onInputChanged(input)
+    if dragging and input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end
+
+local function onInputEnded(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end
+
+UserInputService.InputBegan:Connect(onInputBegan)
+UserInputService.InputChanged:Connect(onInputChanged)
+UserInputService.InputEnded:Connect(onInputEnded)
