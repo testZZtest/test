@@ -1,0 +1,83 @@
+-- Criação da GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Button = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
+ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false -- Evita que a GUI desapareça após morrer
+
+-- Configuração do Botão
+Button.Parent = ScreenGui
+Button.Text = "Activate Loop"
+Button.Size = UDim2.new(0, 200, 0, 50)
+Button.Position = UDim2.new(0.75, 0, 0.05, 0) -- Posição inicial (lado direito superior)
+Button.BackgroundColor3 = Color3.new(0, 0.5, 1)
+Button.TextColor3 = Color3.new(1, 1, 1)
+Button.Font = Enum.Font.SourceSansBold
+Button.TextSize = 18
+
+-- Cantos arredondados
+UICorner.Parent = Button
+
+-- Variáveis de controle
+local loopActive = false
+
+-- Função para pressionar botões "Up" continuamente
+local function loopClickUpButtons()
+    while loopActive do
+        local vehicles = workspace:GetDescendants() -- Procura em todo o workspace
+        for _, obj in pairs(vehicles) do
+            if obj:IsA("ClickDetector") and obj.Parent and obj.Parent.Name == "Up" then
+                fireclickdetector(obj) -- Clica no ClickDetector do botão "Up"
+            end
+        end
+        task.wait(0.1) -- Aguardar um curto intervalo para evitar sobrecarga
+    end
+end
+
+-- Função para ativar/desativar o loop
+local function toggleLoop()
+    loopActive = not loopActive
+    if loopActive then
+        Button.Text = "Deactivate Loop"
+        loopClickUpButtons()
+    else
+        Button.Text = "Activate Loop"
+    end
+end
+
+-- Conexão do botão do GUI com a função de ativação/desativação
+Button.MouseButton1Click:Connect(toggleLoop)
+
+-- Tornar a GUI móvel ao toque
+local UIS = game:GetService("UserInputService")
+local dragging, dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    local newPosition = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+    Button.Position = newPosition
+end
+
+Button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Button.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Button.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        update(input)
+    end
+end)
